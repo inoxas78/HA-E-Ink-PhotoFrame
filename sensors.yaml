@@ -1,0 +1,147 @@
+#V1 config yaml
+- platform: template
+  sensors:
+
+    #Récupérer la date
+    jour_de_la_semaine:
+      friendly_name: "Jour de la Semaine"
+      value_template: "{{ now().strftime('%A') }}"
+    jour_du_mois:
+      friendly_name: "Jour du Mois"
+      value_template: "{{ now().day }}"
+    mois_actuel:
+      friendly_name: "Mois Actuel"
+      value_template: "{{ now().strftime('%B') }}"
+
+      
+    #nom des chauffages actifs:
+    
+    chauffages_noms:
+        friendly_name: "Noms des Chauffages"
+        value_template: "{{ states('sensor.chauffages_actifs_text') }}"
+        unique_id: "Nom des chauffages actifs"
+        
+    #chauffage actif oui ou non
+    heating_active:
+      friendly_name: "Chauffage Actif"
+      value_template: >-
+        {{ (states('sensor.chambre_de_bebe_heating')|int > 0) or
+           (states('sensor.bureau_heating')|int > 0) or
+           (states('sensor.chambre_de_nell_heating')|int > 0) or
+           (states('sensor.chambre_des_garcons_heating')|int > 0) or
+           (states('sensor.chambre_des_parents_heating')|int > 0) or
+           (states('sensor.cuisine_heating')|int > 0) or
+           (states('sensor.entree_heating')|int > 0) or
+           (states('sensor.salon_heating')|int > 0) }}
+      unique_id: "Chauffage_actif"
+    #nombre de chauffages actifs
+    nombre_chauffages_actifs:
+      friendly_name: "Nombre de Chauffages Actifs"
+      value_template: >-
+        {{ [
+          states('sensor.chambre_de_bebe_heating')|int,
+          states('sensor.bureau_heating')|int,
+          states('sensor.chambre_de_nell_heating')|int,
+          states('sensor.chambre_des_garcons_heating')|int,
+          states('sensor.chambre_des_parents_heating')|int,
+          states('sensor.cuisine_heating')|int,
+          states('sensor.entree_heating')|int,
+          states('sensor.salon_heating')|int
+        ] | select('gt', 0) | list | count }}
+      icon_template: mdi:radiator
+      unit_of_measurement: 'chauffages'
+      unique_id: "nb_chauffages_actifs"
+
+#meteo
+
+    # Capteur pour la condition météo actuelle
+    weather_condition_now:
+      friendly_name: "Condition Météo Actuelle"
+      value_template: >
+        {% set cond_now = states('weather.maison') %}
+        {% if states('sun.sun') == 'below_horizon' %}
+            {% if cond_now == 'sunny' %} night {% elif cond_now == 'partlycloudy' %} night-partly-cloudy {% else %} {{ cond_now }} {% endif %}
+        {% else %}
+            {{ cond_now }}
+        {% endif %}
+
+    # Capteurs pour les conditions météo futures
+    # Condition Météo Future 0
+    weather_condition_future_0:
+      friendly_name: "Condition Météo Future 0"
+      value_template: "{{ state_attr('weather.maison', 'forecast')[0].condition }}"
+
+    weather_temperature_future_0:
+      friendly_name: "Température Météo Future 0"
+      value_template: "{{ state_attr('weather.maison', 'forecast')[0].temperature }}"
+      unit_of_measurement: '°C'
+
+    # Condition Météo Future 1
+    weather_condition_future_1:
+      friendly_name: "Condition Météo Future 1"
+      value_template: "{{ state_attr('weather.maison', 'forecast')[1].condition }}"
+
+    weather_temperature_future_1:
+      friendly_name: "Température Météo Future 1"
+      value_template: "{{ state_attr('weather.maison', 'forecast')[1].temperature }}"
+      unit_of_measurement: '°C'
+
+    # Condition Météo Future 2
+    weather_condition_future_2:
+      friendly_name: "Condition Météo Future 2"
+      value_template: "{{ state_attr('weather.maison', 'forecast')[2].condition }}"
+
+    weather_temperature_future_2:
+      friendly_name: "Température Météo Future 2"
+      value_template: "{{ state_attr('weather.maison', 'forecast')[2].temperature }}"
+      unit_of_measurement: '°C'
+
+    # Condition Météo Future 3
+    weather_condition_future_3:
+      friendly_name: "Condition Météo Future 3"
+      value_template: "{{ state_attr('weather.maison', 'forecast')[3].condition }}"
+
+    weather_temperature_future_3:
+      friendly_name: "Température Météo Future 3"
+      value_template: "{{ state_attr('weather.maison', 'forecast')[3].temperature }}"
+      unit_of_measurement: '°C'
+      
+    # Condition Météo Future 4
+    weather_condition_future_4:
+      friendly_name: "Condition Météo Future 4"
+      value_template: "{{ state_attr('weather.maison', 'forecast')[4].condition }}"
+
+    weather_temperature_future_4:
+      friendly_name: "Température Météo Future 4"
+      value_template: "{{ state_attr('weather.maison', 'forecast')[4].temperature }}"
+      unit_of_measurement: '°C'
+      
+    # Condition Météo Future 5
+    weather_condition_future_5:
+      friendly_name: "Condition Météo Future 5"
+      value_template: "{{ state_attr('weather.maison', 'forecast')[5].condition }}"
+
+    weather_temperature_future_5:
+      friendly_name: "Température Météo Future 5"
+      value_template: "{{ state_attr('weather.maison', 'forecast')[5].temperature }}"
+      unit_of_measurement: '°C'
+
+
+
+# Tempo
+- platform: rest
+  name: "Tempo Demain"
+  resource_template: https://particulier.edf.fr/bin/edf_rc/servlets/ejptemponew?Date_a_remonter={{now().strftime("%Y-%m-%d")}}&TypeAlerte=TEMPO
+  value_template: '{{ value_json.JourJ1.Tempo }}'
+  headers:
+    Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
+    Content-Type: application/json
+    User-Agent: Wget/1.20.3 (linux-gnu)
+- platform: rest
+  name: "Tempo Aujourd'hui"
+  resource_template: https://particulier.edf.fr/bin/edf_rc/servlets/ejptemponew?Date_a_remonter={{now().strftime("%Y-%m-%d")}}&TypeAlerte=TEMPO
+  value_template: "{{ value_json['JourJ'].Tempo }}"
+  headers:
+    Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
+    Content-Type: application/json
+    User-Agent: Wget/1.20.3 (linux-gnu)
