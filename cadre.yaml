@@ -1,0 +1,933 @@
+esphome:
+  name: device_name
+  friendly_name: device_friendly_name
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+# Enable logging
+logger:
+
+# Enable Home Assistant API
+api:
+  encryption:
+    key: "your_encryption_key"
+
+ota:
+
+wifi:
+  ssid: "your_wifi_ssid"
+  password: "your_wifi_password"
+  manual_ip:
+    static_ip: your_static_ip
+    gateway: your_gateway_ip
+    subnet: your_subnet_mask
+
+  # Enable fallback hotspot (captive portal) in case wifi connection fails
+  ap:
+    ssid: "fallback_hotspot_ssid"
+    password: "fallback_hotspot_password"
+
+    globals:
+  - id: recorded_display_refresh
+    type: int
+    restore_value: yes
+    initial_value: '0' 
+  - id: last_screen_update
+    type: unsigned long
+    restore_value: no
+    initial_value: '0'
+  - id: current_hour
+    type: int
+  - id: current_minute
+    type: int
+
+interval:
+  - interval: 1min
+    then:
+      - lambda: |-
+          // Get the current time
+          auto time = id(time_sntp).now(); 
+
+          // Update the global variables
+          id(current_hour) = time.hour; // No parentheses needed
+          id(current_minute) = time.minute; // No parentheses needed
+
+
+script:
+  - id: update_screen
+    then:
+      - component.update: epaper_display
+      - delay: 500ms
+      - component.update: epaper_display
+      - lambda: 'id(recorded_display_refresh) += 1;'  
+      - lambda: |-
+         auto time = id(time_sntp)->now();
+         auto timestamp = time.timestamp;
+         id(display_last_update).publish_state(timestamp);
+
+
+captive_portal:
+font:
+  - file: "gfonts://Roboto"
+    id: font1
+    size: 25  # Augmentez la taille de la police
+  - file: "/config/esphome/Arial.ttf"
+    id: font1_2
+    size: 15  # Augmentez la taille de la police
+  - file: "gfonts://Sometype+Mono"
+    id: font2
+    size: 40  # Augmentez la taille de la police
+  - file: "gfonts://Sometype+Mono"
+    id: font3
+    size: 70  # Augmentez la taille de la police
+  - file: "gfonts://Sometype+Mono"
+    id: font4
+    size: 160  # Augmentez la taille de la police
+  - file: "gfonts://Sometype+Mono"
+    id: font5
+    size: 30  # Augmentez la taille de la police
+  - file: "/config/esphome/WeatherSymbols.ttf"
+    id: weather_font
+    size: 200  # Augmentez la taille de la police
+
+  - file: "/config/esphome/materialdesignicons-webfont.ttf"
+    id: wifi_font
+    size: 15
+    glyphs:
+      - "\U000F05A9" # mdi-wifi
+      - "\U000F0928" # mdi-wifi-strength-4
+      - "\U000F0925" # mdi-wifi-strength-3 
+      - "\U000F0922" # mdi-wifi-strength-2
+      - "\U000F091F" # mdi-wifi-strength-1
+      - "\U000F092B" # mdi-wifi-strength-alert-outline
+      - "\U000F054B" # mdi umbrella-outline
+      - "\U000F0F29" # mdi snowflake-alert
+      - "\U000F0535" # mdi trending-up
+      - "\U000F0533" # mdi trending-down 
+  - file: "/config/esphome/materialdesignicons-webfont.ttf"
+    id: mdi120
+    size: 200
+    glyphs: &mdi-weather-glyphs
+       - "\U000F0590" # mdi-weather-cloudy
+       - "\U000F0F2F" # mdi-weather-cloudy-alert
+       - "\U000F0E6E" # mdi-weather-cloudy-arrow-right
+       - "\U000F0591" # mdi-weather-fog
+       - "\U000F0592" # mdi-weather-hail
+       - "\U000F0F30" # mdi-weather-hazy
+       - "\U000F0898" # mdi-weather-hurricane
+       - "\U000F0593" # mdi-weather-lightning
+       - "\U000F067E" # mdi-weather-lightning-rainy
+       - "\U000F0594" # mdi-weather-night
+       - "\U000F0F65" # mdi-weather-clear-night
+       - "\U000F0F31" # mdi-weather-night-partly-cloudy
+       - "\U000F0595" # mdi-weather-partly-cloudy
+       - "\U000F0F32" # mdi-weather-partly-lightning
+       - "\U000F0F33" # mdi-weather-partly-rainy
+       - "\U000F0F34" # mdi-weather-partly-snowy
+       - "\U000F0F35" # mdi-weather-partly-snowy-rainy
+       - "\U000F0596" # mdi-weather-pouring
+       - "\U000F0597" # mdi-weather-rainy
+       - "\U000F0598" # mdi-weather-snowy
+       - "\U000F0F36" # mdi-weather-snowy-heavy
+       - "\U000F067F" # mdi-weather-snowy-rainy
+       - "\U000F0599" # mdi-weather-sunny
+       - "\U000F0F37" # mdi-weather-sunny-alert
+       - "\U000F14E4" # mdi-weather-sunny-off
+       - "\U000F059A" # mdi-weather-sunset
+       - "\U000F059B" # mdi-weather-sunset-down
+       - "\U000F059C" # mdi-weather-sunset-up
+       - "\U000F0F38" # mdi-weather-tornado
+       - "\U000F059D" # mdi-weather-windy
+       - "\U000F059E" # mdi-weather-windy-variant
+       - "\U000F1A74" # mdi-solar-power-variant-outline
+       - "\U000F1904" # mdi-home-lightning-bolt-outline
+
+       - "\U000F0510" # mdi-thermometer
+       - "\U000F058E" # mdi-humidity-icon
+       - "\U000F0D43" # mdi-air-quality
+       - "\U000F14EE" # mdi-price-check
+       - "\U000F1A91" # mdi-cash-clock
+       - "\U000F00F6" # mdi-calendar-today
+       - "\U000F1135" # mdi-calendar-arrow-right
+
+  - file: "/config/esphome/materialdesignicons-webfont.ttf"
+    id: mdi80
+    size: 80
+    glyphs: *mdi-weather-glyphs
+
+  - file: "/config/esphome/materialdesignicons-webfont.ttf"
+    id: mdi36
+    size: 36
+    glyphs: *mdi-weather-glyphs
+  - file: "/config/esphome/materialdesignicons-webfont.ttf"
+    id: mdi20
+    size: 20
+    glyphs: *mdi-weather-glyphs
+  ######### REGULAR #################
+  - file: "/config/esphome/GothamRnd-Book.ttf"
+    id: book20
+    size: 20
+    glyphs: &font-glyphs
+      ['!', '"', '%', '(', ')', '+', '=', ',', '-', '_', '.', ':', '°', ' ',
+      '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
+      'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+      'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+      'é', 'à', 'è', 'ç', 'ù', 'É', 'À', 'È', 'Ç', 'Ù', '€']
+  - file: "/config/esphome/GothamRnd-Book.ttf"
+    id: book25
+    size: 25
+  - file: "/config/esphome/GothamRnd-Book.ttf"
+    id: font30
+    size: 25
+    glyphs : *font-glyphs 
+  - file: "/config/esphome/GothamRnd-Book.ttf"
+    id: book160
+    size: 160
+    glyphs : *font-glyphs 
+  ########## BOLD ################## 
+  - file: "/config/esphome/GothamRnd-Bold.ttf"
+    id: bold15
+    size: 15
+    glyphs : *font-glyphs 
+  - file: "/config/esphome/GothamRnd-Bold.ttf"
+    id: bold20
+    size: 20
+    glyphs : *font-glyphs 
+  - file: "/config/esphome/GothamRnd-Bold.ttf"
+    id: bold25
+    size: 25
+    glyphs : *font-glyphs 
+  - file: "/config/esphome/GothamRnd-Bold.ttf"
+    id: bold30
+    size: 30
+    glyphs : *font-glyphs 
+  - file: "/config/esphome/GothamRnd-Bold.ttf"
+    id: bold35
+    size: 35
+    glyphs : *font-glyphs 
+  - file: "/config/esphome/GothamRnd-Bold.ttf"
+    id: bold40
+    size: 40
+    glyphs : *font-glyphs 
+  - file: "/config/esphome/GothamRnd-Bold.ttf"
+    id: bold55
+    size: 55
+    glyphs: ['.', '°', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '-', '%']
+  - file: "/config/esphome/GothamRnd-Bold.ttf"
+    id: bold70
+    size: 60
+    glyphs: ['.', '°', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'C', '-', '%']
+
+spi:
+  clk_pin: 13
+  mosi_pin: 14
+display:
+  - platform: waveshare_epaper
+    model: 7.50inv2
+    cs_pin: 15
+    dc_pin: 27
+    busy_pin: //très important
+      number: 25
+      inverted: True
+    reset_pin: 26
+    id: epaper_display
+    update_interval: never
+    rotation: 270°
+    reset_duration: 2ms
+    lambda: |-
+           // Affichage du signal wifi
+            if (id(wifisignal).has_state()) {
+                if (id(wifisignal).state >= -50) {
+                    // Excellent
+                    it.printf(470, 8, id(wifi_font), TextAlign::CENTER, "\U000F0928");
+                } else if (id(wifisignal).state >= -60) {
+                    // Good
+                    it.printf(470, 8, id(wifi_font), TextAlign::CENTER, "\U000F0925");
+                } else if (id(wifisignal).state >= -67) {
+                    // Fair
+                    it.printf(470, 8, id(wifi_font), TextAlign::CENTER, "\U000F0922");
+                } else if (id(wifisignal).state >= -70) {
+                    // Weak
+                    it.printf(470, 8, id(wifi_font), TextAlign::CENTER, "\U000F091F");
+                } else {
+                    // Unlikely working signal
+                    it.printf(470, 8, id(wifi_font), TextAlign::CENTER, "\U000F092B");
+                }
+            }            
+            // Map de la date en fr
+            std::map<std::string, std::string> jour_semaine_traduction = {
+                {"Monday", "Lundi"},
+                {"Tuesday", "Mardi"},
+                {"Wednesday", "Mercredi"},
+                {"Thursday", "Jeudi"},
+                {"Friday", "Vendredi"},
+                {"Saturday", "Samedi"},
+                {"Sunday", "Dimanche"}
+            };
+
+            std::map<std::string, std::string> mois_traduction = {
+                {"January", "Janvier"},
+                {"February", "Février"},
+                {"March", "Mars"},
+                {"April", "Avril"},
+                {"May", "Mai"},
+                {"June", "Juin"},
+                {"July", "Juillet"},
+                {"August", "Août"},
+                {"September", "Septembre"},
+                {"October", "Octobre"},
+                {"November", "Novembre"},
+                {"December", "Décembre"}
+            };
+
+            // Affichage de la date
+            std::string jour_semaine = id(jour_de_la_semaine).state;
+            auto trad_jour = jour_semaine_traduction.find(jour_semaine);
+            if (trad_jour != jour_semaine_traduction.end()) {
+                it.print(102, 10, id(bold30), TextAlign::CENTER, trad_jour->second.c_str());
+            }
+            it.print(0, 40, id(book160), id(jour_du_mois).state.c_str());
+            std::string mois = id(mois_actuel).state;
+            auto trad_mois = mois_traduction.find(mois);
+            if (trad_mois != mois_traduction.end()) {
+                mois = trad_mois->second;
+            }
+            int y_position = 10;  // Démarrez à cette position verticale
+            int line_height = 22;  // Hauteur de ligne (ajustez selon la taille de votre police)
+            for (char& c : mois) {
+                std::string letter(1, c);  // Convertissez le caractère en string
+                it.print(205, y_position, id(bold30), letter.c_str());
+                y_position += line_height;  // Déplacez-vous vers le bas pour la prochaine lettre
+            }
+
+            it.line(240, 10, 240, 200);
+            //mapping meteo
+            std::map<std::string, std::string> weather_icon_map
+            {
+             {"cloudy", "\U000F0590"},
+             {"cloudy-alert", "\U000F0F2F"},
+             {"cloudy-arrow-right", "\U000F0E6E"},
+             {"fog", "\U000F0591"}, 
+             {"hail", "\U000F0592"},
+             {"hazy", "\U000F0F30"},
+             {"hurricane", "\U000F0898"},
+             {"lightning", "\U000F0593"},
+             {"lightning-rainy", "\U000F067E"},
+             {"night", "\U000F0594"},
+             {"night-partly-cloudy", "\U000F0F31"},
+             {"partlycloudy", "\U000F0595"},
+             {"partly-lightning", "\U000F0F32"},
+             {"partly-rainy", "\U000F0F33"},
+             {"partly-snowy", "\U000F0F34"},
+             {"partly-snowy-rainy", "\U000F0F35"},
+             {"pouring", "\U000F0596"},
+             {"rainy", "\U000F0597"},
+             {"snowy", "\U000F0598"},
+             {"snowy-heavy", "\U000F0F36"},
+             {"snowy-rainy", "\U000F067F"},
+             {"sunny", "\U000F0599"},
+             {"sunny-alert", "\U000F0F37"},
+             {"sunny-off", "\U000F14E4"},
+             {"sunset", "\U000F059A"},
+             {"sunset-down", "\U000F059B"},
+             {"sunset-up", "\U000F059C"},
+             {"tornado", "\U000F0F38"},
+             {"windy", "\U000F059D"},
+             {"windy-variant", "\U000F059E"},
+            };
+
+            std::map<std::string, std::string> weather_traduction
+            {
+             {"cloudy", "Nuageux"},
+             {"cloudy-alert", "Alerte"},
+             {"cloudy-arrow-right", "--"},
+             {"fog", "Brouillard"},
+             {"hail", "Grêle"},
+             {"hazy", "Brume"},
+             {"hurricane", "Ouragan"},
+             {"lightning", "Orage"},
+             {"lightning-rainy", "Orageux"},
+             {"night", "Nuit"},
+             {"night-partly-cloudy", "Nuageux"},
+             {"partlycloudy", "Nuageux"},
+             {"partly-lightning", "Orageux"},
+             {"partly-rainy", "Pluvieux"},
+             {"partly-snowy", "Neigeux"},
+             {"partly-snowy-rainy", "Neigeux"},
+             {"pouring", "À verse"},
+             {"rainy", "Pluvieux"},
+             {"snowy", "Neigeux"},
+             {"snowy-heavy", "Neigeux"},
+             {"snowy-rainy", "Neigeux"},
+             {"sunny", "Ensoleillé"},
+             {"sunny-alert", "Alerte"},
+             {"sunny-off", "--"},
+             {"sunset", "Crépuscule"},
+             {"sunset-down", "Crépuscule"},
+             {"sunset-up", "Aube"},
+             {"tornado", "Tornade"},
+             {"windy", "Venteux"},
+             {"windy-variant", "Venteux"},
+            };
+            // Récupération des états des sensors
+            std::string weather_future_state_0 = id(condition_meteo_future_0).state;
+            std::string weather_future_state_1 = id(condition_meteo_future_1).state;
+            std::string weather_future_state_2 = id(condition_meteo_future_2).state;
+
+            int temperature_future_0 = id(temperature_meteo_future_0).state;
+            int temperature_future_1 = id(temperature_meteo_future_1).state;
+            int temperature_future_2 = id(temperature_meteo_future_2).state;
+
+            //Récupération meteo actuelle
+            std::string weather_current_state = id(condition_meteo_actuelle).state;
+
+            //Affichage meteo actuelle
+            auto current_icon = weather_icon_map.find(weather_current_state);
+            if (current_icon != weather_icon_map.end()) {
+                it.printf(360, 100, id(mdi120), TextAlign::CENTER, "%s", current_icon->second.c_str());
+            }
+            it.printf(480, 20, id(font1), TextAlign::TOP_RIGHT, "%.1f°C", id(temperature_ext).state);
+
+            // Récupération du temps actuel
+            auto time = id(time_sntp).now(); 
+            int today = time.day_of_week; // 0 pour dimanche, 1 pour lundi, etc.
+
+            // Positions Y pour les éléments
+            int yPositionIcon = 270; // Position Y pour l'icône
+            int yPositionDayName = 225; // Position Y pour le nom du jour
+            int yPositionTemp = 320; // Position Y pour la température
+
+            // Noms des jours de la semaine
+            std::array<std::string, 7> weekdays = {"Mar", "Mer", "Jeu", "Ven", "Sam", "Dim", "Lun"};
+
+            // Positions X spécifiées pour chaque icône
+            std::array<int, 5> xPositions = {60, 150, 240, 330, 420};
+
+            // Boucle pour afficher les noms des jours, les icônes et températures
+            for (int i = 0; i < 5; i++) {
+                int future_day_index = (today + i) % 7;
+                std::string day_name = weekdays[future_day_index];
+
+                std::string weather_future_state;
+                int temperature_future;
+
+                // Utilisez une structure switch ou une série de if-else pour déterminer l'état météo et la température
+                // en fonction de la valeur de i (0 pour aujourd'hui, 1 pour demain, etc.)
+                switch (i) {
+                    case 0:
+                        weather_future_state = id(condition_meteo_future_0).state;
+                        temperature_future = id(temperature_meteo_future_0).state;
+                        break;
+                    case 1:
+                        weather_future_state = id(condition_meteo_future_1).state;
+                        temperature_future = id(temperature_meteo_future_1).state;
+                        break;
+                    case 2:
+                        weather_future_state = id(condition_meteo_future_2).state;
+                        temperature_future = id(temperature_meteo_future_2).state;
+                        break;
+                    case 3:
+                        weather_future_state = id(condition_meteo_future_3).state;
+                        temperature_future = id(temperature_meteo_future_3).state;
+                        break;
+                    case 4:
+                        weather_future_state = id(condition_meteo_future_4).state;
+                        temperature_future = id(temperature_meteo_future_4).state;
+                        break;
+                }
+
+                // Affichage du nom du jour
+                it.printf(xPositions[i], yPositionDayName, id(book25), TextAlign::CENTER, "%s", day_name.c_str());
+
+                // Affichage de l'icône météo
+                auto future_icon = weather_icon_map.find(weather_future_state);
+                if (future_icon != weather_icon_map.end()) {
+                    it.printf(xPositions[i], yPositionIcon, id(mdi80), TextAlign::CENTER, "%s", future_icon->second.c_str());
+                }
+
+                // Affichage de la température
+                it.printf(xPositions[i], yPositionTemp, id(book25), TextAlign::CENTER, "%d°C", temperature_future);
+            }
+
+
+
+
+            // graphique des températures
+
+            it.graph(5, 335, id(multi_temperature_graph));
+
+            // conso journalière et prod solaire
+            it.print(40, 445, id(mdi36), TextAlign::TOP_CENTER, "\U000F1904");
+            it.printf(85, 445, id(bold30), TextAlign::TOP_LEFT, "%.1fkWh", id(conso_jour).state);
+
+            it.line(240, 450, 240, 580);
+            // Prod elec et conso onstantanée
+            it.print(40, 481, id(mdi36), TextAlign::TOP_CENTER, "\U000F1A74");
+            it.printf(85, 481, id(bold30), TextAlign::TOP_LEFT, "%.1fkWh", id(prod_jour).state);
+            it.printf(40, 517, id(bold30), TextAlign::TOP_LEFT, "Inst. %.0fW", id(conso_maison).state);
+            
+            // Affichez la couleur TEMPO actuelle et prochaine avec des cercles ou des icônes
+            // Pour la couleur actuelle
+            it.print(5, 553, id(mdi36), TextAlign::TOP_LEFT, "\U000F00F6");
+            it.printf(40, 553, id(bold30), TextAlign::TOP_LEFT, "%s", id(rte_tempo_couleur_actuelle).state.c_str());
+            it.print(150, 553, id(mdi36), TextAlign::TOP_RIGHT, "\U000F1135");
+            it.printf(234, 553, id(bold30), TextAlign::TOP_RIGHT, "%s", id(rte_tempo_prochaine_couleur).state.c_str());
+
+
+
+            it.graph(5, 595, id(multi_energy_graph));
+
+            it.line(10, 710, 470, 710);
+          
+            // affichage des pièces chauffées
+            it.printf(0, 720, id(book25), TextAlign::TOP_LEFT, "Chauffage:");
+            if (id(nb_chauffage_act).state > 0) {
+                it.printf(140, 720, id(book25), TextAlign::TOP_LEFT, "Oui");
+            } else {
+                it.printf(140, 720, id(book25), TextAlign::TOP_LEFT, "Non");
+            }
+
+            std::string heatedRooms = "";
+            if (id(heated_chambre_de_bebe).state) heatedRooms += "- Chambre de Duane ";
+            if (id(heated_bureau).state) heatedRooms += "- Bureau ";
+            if (id(heated_chambre_de_nell).state) heatedRooms += "- Chambre de Nell ";
+            if (id(heated_chambre_des_garcons).state) heatedRooms += "- Chambre des gars ";
+            if (id(heated_chambre_des_parents).state) heatedRooms += "- Chambre des Parents ";
+            if (id(heated_cuisine).state) heatedRooms += "- Cuisine ";
+            if (id(heated_entree).state) heatedRooms += "- Entree ";
+            if (id(heated_salon).state) heatedRooms += "- Salon ";
+
+            if (!heatedRooms.empty()) {
+                it.printf(0, 745, id(font1_2), TextAlign::TOP_LEFT, "%s", heatedRooms.c_str());
+            } else {
+                it.printf(0, 745, id(font1_2), TextAlign::TOP_LEFT, "Aucune piece chauffee");
+            }
+
+
+            // temps de trajets
+            it.printf(0, 765, id(book25), TextAlign::TOP_LEFT, "Traj.Caro %.0f min", id(trajet_caro).state);
+            it.line(240, 765, 240, 800);
+            it.printf(480, 765, id(book25), TextAlign::TOP_RIGHT, "Traj.Max %.0f min", id(trajet_max).state);
+
+            //Températures maison
+            it.print(245, 354, id(mdi80), TextAlign::TOP_LEFT, "\U000F0510");
+            it.printf(480, 354, id(bold70), TextAlign::TOP_RIGHT, "%.1f°", id(temperature_salon).state);
+            it.print(245, 430, id(mdi80), TextAlign::TOP_LEFT, "\U000F058E");
+            it.printf(480, 430, id(bold70), TextAlign::TOP_RIGHT, "%.1f%%", id(hum_salon).state);
+
+            it.print(245, 506, id(mdi80), TextAlign::TOP_LEFT, "\U000F0510");
+            it.printf(480, 506, id(bold70), TextAlign::TOP_RIGHT, "%.1f°", id(temperature_ext).state);
+
+            // TEMPO
+
+
+            // (affichage du prix tempo, pas encore mis en place)
+            //it.print(480, 457, id(mdi36), TextAlign::TOP_RIGHT, "\U000F14EE"); // Icône pour le prix actuel
+            //it.printf(430, 457, id(bold30), TextAlign::TOP_RIGHT, "%s €kWh", id(edf_tempo_prix_actuel).state.c_str());
+
+            //it.print(480, 501, id(mdi36), TextAlign::TOP_RIGHT, "\U000F1A91"); // Icône pour le prochain prix
+            //it.printf(430, 501, id(bold30), TextAlign::TOP_RIGHT, "%s €kWh", id(edf_tempo_prochain_prix).state.c_str());
+
+
+
+graph:
+  # Show multi-trace graph
+  - id: multi_temperature_graph
+    duration: 3h
+    width: 230
+    height: 100
+    x_grid: 10min
+    y_grid: 0.5 
+    traces:
+      - sensor: temperature_salon
+        line_type: SOLID
+        line_thickness: 5
+      - sensor: temperature_ext
+        line_type: DASHED
+        line_thickness: 5
+  - id: multi_energy_graph
+    duration: 3h
+    width: 230
+    height: 100
+    x_grid: 10min
+    y_grid: 100
+    traces:
+      - sensor: conso_maison
+        line_type: SOLID
+        line_thickness: 5
+      - sensor: conso_solaire
+        line_type: DASHED
+        line_thickness: 5
+        
+
+web_server:
+  port: 80
+
+
+text_sensor:
+  - platform: homeassistant
+    id: weather_txt
+    entity_id: sensor.meteo_maison
+    internal: True
+
+  #tempo
+  - platform: homeassistant
+    id: edf_tempo_prix_actuel
+    entity_id: sensor.edf_tempo_prix_actuel
+  - platform: homeassistant
+    id: edf_tempo_prochain_prix
+    entity_id: sensor.edf_tempo_prochain_prix
+  - platform: homeassistant
+    id: rte_tempo_couleur_actuelle
+    entity_id: sensor.rte_tempo_couleur_actuelle
+  - platform: homeassistant
+    id: rte_tempo_prochaine_couleur
+    entity_id: sensor.rte_tempo_prochaine_couleur
+
+  # Capteur pour la condition météo actuelle qui provoque la mise à jour du cadre
+  - platform: homeassistant
+    id: condition_meteo_actuelle
+    name: "Condition Météo Actuelle"
+    entity_id: sensor.weather_condition_now
+    on_value:
+      then:
+        - delay: 30s
+        - script.execute: update_screen
+
+  # Capteur pour la condition météo future 0
+  - platform: homeassistant
+    id: condition_meteo_future_0
+    name: "Condition Météo Future 0"
+    entity_id: sensor.weather_condition_future_0
+
+
+  # Capteur pour la condition météo future 1
+  - platform: homeassistant
+    id: condition_meteo_future_1
+    name: "Condition Météo Future 1"
+    entity_id: sensor.weather_condition_future_1
+
+  # Capteur pour la condition météo future 2
+  - platform: homeassistant
+    id: condition_meteo_future_2
+    name: "Condition Météo Future 2"
+    entity_id: sensor.weather_condition_future_2
+
+  # Capteur pour la condition météo future 3
+  - platform: homeassistant
+    id: condition_meteo_future_3
+    name: "Condition Météo Future 3"
+    entity_id: sensor.weather_condition_future_3
+# Capteur pour la condition météo future 4
+  - platform: homeassistant
+    id: condition_meteo_future_4
+    name: "Condition Météo Future 4"
+    entity_id: sensor.weather_condition_future_4
+
+# Capteur pour la condition météo future 5
+  - platform: homeassistant
+    id: condition_meteo_future_5
+    name: "Condition Météo Future 5"
+    entity_id: sensor.weather_condition_future_5
+
+  # Date
+  - platform: homeassistant
+    id: jour_de_la_semaine
+    entity_id: sensor.jour_de_la_semaine
+    on_value:
+      then:
+        - script.execute: update_screen
+
+  - platform: homeassistant
+    id: jour_du_mois
+    entity_id: sensor.jour_du_mois
+
+  - platform: homeassistant
+    id: mois_actuel
+    entity_id: sensor.mois_actuel
+
+
+time:
+    - platform: sntp
+      id: time_sntp
+      timezone: Europe/Paris  # Set the correct timezone for your location
+      on_time:
+      # 00:00
+      - seconds: 0
+        minutes: 5
+        hours: 0
+        then:
+          - script.execute: update_screen
+      # 06:00 (Saturday and Sunday)
+      - seconds: 0
+        minutes: 0
+        hours: 6
+        then:
+          - script.execute: update_screen
+      # 16:00
+      - seconds: 0
+        minutes: 0
+        hours: 16
+        then:
+          - script.execute: update_screen
+
+sensor:
+
+#Conso Elec ------------------------------------
+  #conso par jour
+  - platform: homeassistant
+    name: "conso par jour"
+    id: conso_jour
+    entity_id: sensor.electricite2
+    accuracy_decimals: 0
+    internal: true
+  #prod solaire
+  - platform: homeassistant
+    name: "prod solaire par jour"
+    id: prod_jour
+    entity_id: sensor.prod_solaire
+    accuracy_decimals: 0
+    internal: true
+  #Conso Inst
+  - platform: homeassistant
+    id: conso_maison
+    entity_id: sensor.conso_corrigee
+    accuracy_decimals: 0
+    internal: true
+  #Prod Inst
+  - platform: homeassistant
+    id: conso_solaire
+    entity_id: sensor.shellyem_34945470f4ca_channel_1_power
+    accuracy_decimals: 0
+    internal: true
+#Météo ------------------------------------------
+  # Capteur de température pour la météo future 0
+  - platform: homeassistant
+    id: temperature_meteo_future_0
+    name: "Température Météo Future 0"
+    entity_id: sensor.weather_temperature_future_0
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+
+  # Capteur de température pour la météo future 1
+  - platform: homeassistant
+    id: temperature_meteo_future_1
+    name: "Température Météo Future 1"
+    entity_id: sensor.weather_temperature_future_1
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+
+  # Capteur de température pour la météo future 2
+  - platform: homeassistant
+    id: temperature_meteo_future_2
+    name: "Température Météo Future 2"
+    entity_id: sensor.weather_temperature_future_2
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+
+  # Capteur de température pour la météo future 3
+  - platform: homeassistant
+    id: temperature_meteo_future_3
+    name: "Température Météo Future 3"
+    entity_id: sensor.weather_temperature_future_3
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+
+# Capteur de température pour la météo future 4
+  - platform: homeassistant
+    id: temperature_meteo_future_4
+    name: "Température Météo Future 4"
+    entity_id: sensor.weather_temperature_future_4
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+
+# Capteur de température pour la météo future 5
+  - platform: homeassistant
+    id: temperature_meteo_future_5
+    name: "Température Météo Future 5"
+    entity_id: sensor.weather_temperature_future_5
+    unit_of_measurement: "°C"
+    accuracy_decimals: 1
+
+
+  - platform: homeassistant
+    id: meteo_maison
+    entity_id: sensor.meteo_maison
+    internal: True
+#Chauffage ------------------------------------------
+  - platform: template
+    name: "Chauffage actif"
+    id: heated_rooms
+    update_interval: 20s  # Mettez à jour toutes les 60 secondes ou ajustez selon vos besoins
+    
+  - platform: homeassistant
+    name: "Chambre de bébé"
+    id: heated_chambre_de_bebe
+    entity_id: sensor.chambre_de_bebe_heating
+    accuracy_decimals: 0
+    internal: true  # Pour éviter de le publier dans Home Assistant
+
+  - platform: homeassistant
+    name: "Bureau"
+    id: heated_bureau
+    entity_id: sensor.bureau_heating
+    accuracy_decimals: 0
+    internal: true
+
+  - platform: homeassistant
+    name: "Chambre de Nell"
+    id: heated_chambre_de_nell
+    entity_id: sensor.chambre_de_nell_heating
+    accuracy_decimals: 0
+    internal: true
+
+  - platform: homeassistant
+    name: "Chambre des garçons"
+    id: heated_chambre_des_garcons
+    entity_id: sensor.chambre_des_garcons_heating
+    accuracy_decimals: 0
+    internal: true
+
+  - platform: homeassistant
+    name: "Chambre des Parents"
+    id: heated_chambre_des_parents
+    entity_id: sensor.chambre_des_parents_heating
+    accuracy_decimals: 0
+    internal: true
+
+  - platform: homeassistant
+    name: "Cuisine"
+    id: heated_cuisine
+    entity_id: sensor.cuisine_heating
+    accuracy_decimals: 0
+    internal: true
+
+  - platform: homeassistant
+    name: "Entrée"
+    id: heated_entree
+    entity_id: sensor.entree_heating
+    accuracy_decimals: 0
+    internal: true
+
+  - platform: homeassistant
+    name: "Salon"
+    id: heated_salon
+    entity_id: sensor.salon_heating
+    accuracy_decimals: 0
+    internal: true
+
+  - platform: homeassistant
+    id: nb_chauffage_act
+    entity_id: sensor.total_heating
+    on_value:
+      then:
+        - script.execute: update_screen
+
+#Qualité de l'air
+
+
+
+#Trajets ------------------------------------------
+  - platform: homeassistant
+    id: trajet_caro
+    entity_id: sensor.trajet_caro
+    accuracy_decimals: 0
+    internal: true
+
+  - platform: homeassistant
+    id: trajet_max
+    entity_id: sensor.trajet_max
+    accuracy_decimals: 0
+    internal: true
+
+#Misc------------------------------------------
+  - platform: wifi_signal
+    name: "Weatherman - WiFi Signal Strength"
+    id: wifisignal
+    unit_of_measurement: "dBm"
+    entity_category: "diagnostic"
+    update_interval: 60s
+
+  - platform: homeassistant
+    id: temperature_salon
+    entity_id: sensor.capteur_salon_temperature
+    accuracy_decimals: 0
+    internal: true
+  - platform: homeassistant
+    id: temperature_ext
+    entity_id: sensor.capteur_ext_temperature
+    accuracy_decimals: 0
+
+    internal: true
+  - platform: homeassistant
+    id: hum_salon
+    entity_id: sensor.capteur_salon_humidity
+    accuracy_decimals: 0
+    internal: true
+
+#Mise à jour du cadre en fonction de la detection de mouvement dans le salon
+  - platform: homeassistant
+    id: mouvement_salon
+    entity_id: sensor.esphome_web_6be67c_move_energy
+    internal: True
+    on_value:
+      then:
+        - if:
+            condition:
+              and:
+                - lambda: 'return id(mouvement_salon).state > 80;'
+                - lambda: 'return (millis() - id(last_screen_update)) > 300000;'
+            then:
+              - script.execute: update_screen
+              - lambda: 'id(last_screen_update) = millis();'
+
+  - platform: template
+    name: ${friendly_name} Display refreshes
+    id: display_refreshes
+    accuracy_decimals: 0    
+    unit_of_measurement: Refreshs
+    state_class: total_increasing
+    entity_category: diagnostic   
+    lambda: |-
+      return id(recorded_display_refresh);    
+
+  - platform: template
+    name: ${friendly_name} Last Update
+    device_class: timestamp
+    id: display_last_update 
+
+  - platform: template
+    id: sys_esp_temperature
+    name: ESP Temperature
+    lambda: return temperatureRead();
+    unit_of_measurement: °C
+    device_class: TEMPERATURE
+    update_interval: 5s
+    entity_category: "diagnostic"
+
+  - platform: uptime
+    name: Uptime
+    id: sys_uptime
+    update_interval: 10s
+
+  - platform: wifi_signal 
+    name: RSSI
+    id: wifi_signal_db
+    update_interval: 5s
+    entity_category: "diagnostic"
+
+  - platform: template
+    id: esp_memory
+    icon: mdi:memory
+    name: ESP Free Memory
+    lambda: return heap_caps_get_free_size(MALLOC_CAP_INTERNAL) / 1024;
+    unit_of_measurement: 'kB'
+    state_class: measurement
+    entity_category: "diagnostic" 
+binary_sensor:  
+
+  - platform: status
+    name: ${friendly_name} Status           
