@@ -1,6 +1,9 @@
 # HA-E-Ink-PhotoFrame
 ESP32 E-Paper Photo Frame
 
+![image](https://github.com/inoxas78/HA-E-Ink-PhotoFrame/assets/21035583/78a35f14-5ef6-4e67-afd2-5a41f5a1a4b3)
+
+
 Inspired by 
 https://github.com/NoahJst/HomeAssistant-Config/blob/main/esphome/epaper-esp32.yaml
 and
