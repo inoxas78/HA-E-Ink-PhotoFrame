@@ -1,7 +1,8 @@
 # HA-E-Ink-PhotoFrame
 ESP32 E-Paper Photo Frame
 
-![image](https://github.com/inoxas78/HA-E-Ink-PhotoFrame/assets/21035583/78a35f14-5ef6-4e67-afd2-5a41f5a1a4b3)
+![image]![IMG_7338](https://github.com/user-attachments/assets/06207456-580f-42a2-b2be-213070ce06f2)
+
 
 
 Inspired by 
